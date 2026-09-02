@@ -64,6 +64,8 @@ export default function AddExpenseForm({ members, onAdd }) {
       date: new Date(date),
       category,
     });
+    setDescription("");
+    setAmount("");
   }
 
   return (

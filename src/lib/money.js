@@ -1,14 +1,17 @@
 export function formatMoney(amount) {
   const n = Number(amount);
   if (!Number.isFinite(n)) return "$0.00";
+  const rounded = Math.abs(n).toFixed(2);
+  if (rounded === "0.00") return "$0.00";
   const sign = n < 0 ? "-" : "";
-  return `${sign}$${Math.abs(n).toFixed(2)}`;
+  return `${sign}$${rounded}`;
 }
 
 // Splits `amount` into cent-accurate shares according to `weights` (numbers
 // that don't need to sum to 1) so the shares always add back up to `amount`
 // exactly, distributing leftover cents to the largest fractional remainders.
 function distributeByWeight(amount, ids, weights) {
+  if (!ids || !ids.length) return {};
   const totalCents = Math.round(Number(amount) * 100);
   const weightSum = weights.reduce((a, b) => a + b, 0) || 1;
   const raw = weights.map((w) => (w / weightSum) * totalCents);

@@ -105,3 +105,33 @@ Keep this file in the repo and **commit it** with your fixes.
 **What I changed:** Compared the sum to `100` with a small tolerance (`Math.abs(sum - 100) < 0.01`) instead of exact equality.
 
 ---
+
+## Bug 11
+
+**How to reproduce:** In edge cases with micro-residuals in debts/credits or formatting numbers close to negative zero (e.g., `-0.001`), `formatMoney()` displayed `-$0.00` and `suggestSettlements()` could generate phantom `$0.00` transfers due to binary floating-point subtraction inaccuracy.
+
+**What is wrong:** `formatMoney` checked `n < 0` without checking if the formatted 2-decimal absolute string was `"0.00"`, leading to visual negative zero. Furthermore, `suggestSettlements` used raw float comparisons and subtractions (`d.amount -= c.amount`), leaving tiny residuals (e.g. `5e-15`) that caused unnecessary zero-dollar transfers.
+
+**What I changed:** Updated `formatMoney()` to explicitly return `"$0.00"` if the rounded value is `"0.00"`. Refactored `suggestSettlements()` to work purely with integer cents (`Math.round(raw * 100)`), completely eliminating floating-point drift and phantom transfers.
+
+---
+
+## Bug 12
+
+**How to reproduce:** Add an expense through the "Add expense" form. After clicking "Save expense", notice the description and amount are still present in the input fields. Furthermore, if switching between members while custom percentages were entered, percentages for deselected members remained in state.
+
+**What is wrong:** `submit()` in `AddExpenseForm.jsx` did not reset `description` and `amount` after dispatching `onAdd()`, leaving stale values in the form. Additionally, `percentsSumTo100` was passed the entire `percents` object including inactive members rather than only the currently selected split members.
+
+**What I changed:** Added `setDescription("")` and `setAmount("")` upon successful form submission, and filtered `activePercents` to only include selected members in `splitWith` before percentage validation and persistence.
+
+---
+
+## Bug 13
+
+**How to reproduce:** Edit an expense amount inline, enter an invalid value (e.g. negative number or non-numeric string), and click away (blur). Or edit the amount through another action.
+
+**What is wrong:** `ExpenseRow` only initialized `draft` state on mount (`useState(String(expense.amount))`). When an invalid amount was entered and blurred, `onSaveAmount` was skipped, but `draft` state remained set to the invalid text while the actual expense data remained unchanged, creating a UI discrepancy. Also pressing `Escape` didn't cancel edits.
+
+**What I changed:** Added `useEffect` in `ExpenseRow` to sync `draft` with `expense.amount`, added an `else` branch on blur to restore the valid amount if an invalid draft was entered, and added `onKeyDown` handlers for `Enter` (blur to commit) and `Escape` (revert draft).
+
+---
